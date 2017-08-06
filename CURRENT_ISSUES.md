@@ -1,4 +1,4 @@
-### This is the longlist of issues currently found in the private development build of the converter.
+### This is the list of issues currently found in the private development build of the converter.
 
 **Issue 001: Any ArticulatedConfig type models with no bone data (no id for boneIndices / boneWeights) will still treat the model as if it has specific datapoints for these values, causing it to read incorrectly.**
  - Issue severity: Intermediate
