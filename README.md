@@ -3,6 +3,7 @@ This is a revamp of the old, crappy tool dubbed [Spiral Knights Model Converter]
 
 # When is it out?
 My rough guess is August 13 at a maximum (Two weeks from now, July 30). I'm actively working.
+(Deadline update, posted August 6 @ 3:09 AM - I'm *thinking* that this might be an accurate release date. I've almost got it down for solid model exporting. At the moment I've only got obj exporting as a crude prototype. It has issues with certain implementations but is otherwise exporting perfectly)
 
 # What makes this version better?
 
