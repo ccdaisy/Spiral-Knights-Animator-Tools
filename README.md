@@ -18,4 +18,4 @@ My rough guess is August 13 at a maximum (Two weeks from now, July 30). I'm acti
 
 # Where can I view development progress? 
 
-You can refer to [https://github.com/XanTheDragon/Spiral-Knights-Animator-Tools/blob/master/CURRENT_ISSUES.md](CURRENT_ISSUES.MD) for the list of issues that are currently hindering development right now.
+You can refer to (https://github.com/XanTheDragon/Spiral-Knights-Animator-Tools/blob/master/CURRENT_ISSUES.md)[CURRENT_ISSUES.MD] for the list of issues that are currently hindering development right now.
