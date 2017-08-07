@@ -8,22 +8,7 @@
 
 **Fix note:** ~~The static values seem to actually be universal, as if they are a base value. It seems that when a value is removed, each stride/offset value loses a static amount (I'm thinking it's 4). In the case of one of the models with no bone data, that would be -8 (no bone indices, no bone weights). However, 4 happens to be the size of those data types. Perhaps I subtract the size of the value that isn't present from the others' strides and offsets.~~
  
-**Fix note:** Actually, offset seems to be calculated!
-The equasion is: `lastOffset + (thisSize * 4) = nextOffset`, and it's consistent. (This also explains why you have to divide the stride values and offset values by 4 when reading from the float array!!)
-```
-boneIndices(Offset=0, Stride=64, Size=4)
-boneWeights(Offset=16, Stride=64, Size=4)
-texCoords(Offset=32, Stride=64, Size=2)
-normals(Offset=40, Stride=64, Size=3)
-vertices(Offset=52, Stride=64, Size=3)
-
-boneIndices = 0
-0 + (4 * 4) = 16 (boneWeights)
-16 + (4 * 4) = 32 (texCoords)
-32 + (2 * 4) = 40 (normals)
-40 + (3 * 4) = 52 (vertices)
-```
-Of course, the above is dynamic to whatever values are or aren't there. This includes Stride.
+**Fix note:** https://xanthedragon.blogspot.com/2017/08/progress-report-6-amazing-discovery.html
  
 # Issues being fixed right now
 
