@@ -1,7 +1,6 @@
 package xandragon.core;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 
 import xandragon.converter.BinaryParser;
 import xandragon.core.ui.MainGui;
@@ -51,7 +50,7 @@ public class Main {
 			
 			String outputExt = FileValidator.getFileExtension(OUTPUT_FILE).toLowerCase();
 			if (!FileValidator.isValidOutput(outputExt)) {
-				log.AppendLn("[ERROR] Invalid output extension \""+outputExt+"\"! Expected the extension(s): {"+FileValidator.getInputList()+"}");
+				log.AppendLn("[ERROR] Invalid output extension \""+outputExt+"\"! Expected the extension(s): ["+FileValidator.getInputList()+"]");
 				return;
 			}
 			

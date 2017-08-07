@@ -16,7 +16,9 @@ import xandragon.core.ui.tree.DataTreePath;
 import xandragon.core.ui.tree.Icon;
 import xandragon.core.ui.tree.Node;
 import xandragon.core.ui.tree.TreeRenderer;
+import xandragon.model.Bone;
 import xandragon.model.Model;
+import xandragon.model.math.Matrix4f;
 import xandragon.util.exception.InvalidDatException;
 import xandragon.util.stream.StreamHelper;
 import xandragon.util.Logger;
@@ -78,6 +80,7 @@ public class BinaryParser {
 		int magic = stream.readInt();
 		
 		if (magic != MAGIC_NUMBER) {
+			//Make a fake exception.
 			log.AppendLn("InvalidDatException thrown!");
 			log.AppendLn("This means the DAT file you've opened is malformed in some way. Here's the supplied reason:");
 			log.AppendLn();
@@ -160,6 +163,23 @@ public class BinaryParser {
 		//Now we need to find the first short value. This value will be the length of the array.
 		short arrLen = data.readShort();
 		renderer.addNodeRoot(new Node("Indices: "+String.valueOf(arrLen), iconData.value));
+		
+		data.rewind();
+		if (canFindData(helper, "bones")) {
+			//We can find bones.
+			//Don't rewind, the string id is just after this.
+			helper.skipUntilTextMet("bones");
+			int[] sequenceString = StringTool.stringToIntArray("java.lang.String");
+			helper.skipUntilSequenceMet(sequenceString);
+			data.skip(sequenceString.length + 1); //The length of the above text + 1. I know there's something after it, usually it's a semicolon. I can't guarantee it so I'll just play safe
+			//Edit: I skip 9 because the byte value just before the first letter is the bone index, and this first index seems to have a static distance from what I can tell
+			//Then after everything else I skip 3 - There's a consistent 4-byte gap between each name, and that last value is the index.
+			data.skip(5); //Skip 5 and then...
+			int amount = data.read(); //6th, which is length
+			renderer.addNodeRoot(new Node("Bone count: "+String.valueOf(amount), iconData.value));
+		} else {
+			renderer.addNodeRoot(new Node("Bone count: NONE", iconData.value));
+		}
 		
 		DefaultMutableTreeNode fArray = renderer.addNodeRoot(new Node("FloatArray (size="+String.valueOf(floatCount)+")", iconData.array));
 				
@@ -283,7 +303,7 @@ public class BinaryParser {
 		StreamHelper helper = new StreamHelper(data);
 		
 		data.skip(3);											//Skip the first 3 header values.
-		helper.getDataUntilControl();			//Get the root class.		
+		helper.getDataUntilControl();							//Get the root class.		
 		helper.skipNextControlCharacters();						//Skip the following control characters
 		helper.getDataUntilControl();							//Run this but don't worry about the data. Using it to skip more stuff.
 		//Skipped: "configs"
@@ -364,6 +384,43 @@ public class BinaryParser {
 		short arrLen = data.readShort();
 		ArrayList<Short> indices = GetIndices(data, arrLen);
 		
+		//Now I need to read for bones.
+		
+		ArrayList<Bone> bones = new ArrayList<Bone>();
+		//First get the names and such like that.
+		data.rewind();
+		if (canFindData(helper, "bones")) {
+			//We can find bones.
+			//Don't rewind, the string id is just after this.
+			helper.skipUntilTextMet("bones");
+			int[] sequenceString = StringTool.stringToIntArray("java.lang.String");
+			helper.skipUntilSequenceMet(sequenceString);
+			data.skip(sequenceString.length + 1); //The length of the above text + 1. I know there's something after it, usually it's a semicolon. I can't guarantee it so I'll just play safe
+			//Edit: I skip 9 because the byte value just before the first letter is the bone index, and this first index seems to have a static distance from what I can tell
+			//Then after everything else I skip 3 - There's a consistent 4-byte gap between each name, and that last value is the index.
+			data.skip(5); //Skip 5 and then...
+			int amount = data.read(); //6th, which is length
+			data.skip(3);
+			for (int i = 0; i < amount; i++) {
+				//int idx = data.read();
+				String name = helper.getDataUntilControl();
+				if (name == "bone_root") {
+					bones.add(new Bone(name, new Matrix4f()));
+				} else {
+					bones.add(new Bone(name));
+				}
+				data.skip(2);
+			}
+		}
+		
+		//Then get their transformations at the start of the file.
+		/*
+		data.rewind();
+		int[] sequenceNode = StringTool.stringToIntArray("ArticulatedConfig$Node");
+		helper.skipUntilSequenceMet(sequenceNode);
+		data.skip(sequenceNode.length);
+		*/
+		
 		ArrayConfig boneIndices = null;
 		ArrayConfig boneWeights = null;
 		ArrayConfig vertexArray = null;
@@ -402,7 +459,7 @@ public class BinaryParser {
 		
 		if (output_file.exists()) output_file.delete();
 		String name = getFileName(input_file);
-		Model mdl = new Model(name, floatArray, indices, boneIndices, boneWeights, vertexArray, normalArray, uvArray);
+		Model mdl = new Model(name, floatArray, indices, bones, boneIndices, boneWeights, vertexArray, normalArray, uvArray);
 		return mdl;
 	}
 	

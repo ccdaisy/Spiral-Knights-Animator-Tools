@@ -162,10 +162,11 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 				if (fileMode == SelectType.SAVE) {
 					OUTPUT_FILE = chooser.getSelectedFile();
 					try {
+						log.ClearLog();
 						OpenFileFilter current = (OpenFileFilter) chooser.getFileFilter();
 						if (current == OBJ) {
 							System.out.println(OUTPUT_FILE.getPath());
-							if (FileValidator.getFileExtension(OUTPUT_FILE).toLowerCase() != "obj") {
+							if (!FileValidator.getFileExtension(OUTPUT_FILE).toLowerCase().matches("obj")) {
 								OUTPUT_FILE = new File(OUTPUT_FILE.getPath() + ".obj");
 							}
 							Model mdl = binaryParser.startProcessing(INPUT_FILE, OUTPUT_FILE);
@@ -174,7 +175,7 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 							builder.createObj(mdl);
 							log.AppendLn("Conversion complete.");
 						} else if (current == DAE) {
-							if (FileValidator.getFileExtension(OUTPUT_FILE).toLowerCase() != "dae") {
+							if (!FileValidator.getFileExtension(OUTPUT_FILE).toLowerCase().matches("dae")) {
 								OUTPUT_FILE = new File(OUTPUT_FILE.getPath() + ".dae");
 							}
 							Model mdl = binaryParser.startProcessing(INPUT_FILE, OUTPUT_FILE);
@@ -198,6 +199,7 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 							saveButton.setEnabled(true);
 						} catch (IOException e) {
 							log.AppendLn("A critical read exception occurred and conversion was not able to continue.");
+							e.printStackTrace();
 							resetTree();
 							saveButton.setEnabled(false);
 						} catch (InvalidDatException e) {

@@ -2,6 +2,9 @@ package xandragon.model;
 
 import java.util.ArrayList;
 
+import xandragon.model.math.Vector2f;
+import xandragon.model.math.Vector3f;
+
 /**
  * Stores geometry data.
  * Has handy functions to automatically compile the text for DAE formatting.

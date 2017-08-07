@@ -1,4 +1,4 @@
-package xandragon.model;
+package xandragon.model.math;
 
 /**
  * Vector2 stored with floats.

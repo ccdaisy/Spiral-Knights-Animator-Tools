@@ -29,7 +29,7 @@ public class SeekInputStream {
 	protected ArrayList<Integer> readValues = new ArrayList<Integer>();
 	
 	/**
-	 * Construct a new SeekInputStream
+	 * Construct a new SeekInputStream from a DataInputStream
 	 * @param in A DataInputStream to read from.
 	 */
 	public SeekInputStream(DataInputStream in) {

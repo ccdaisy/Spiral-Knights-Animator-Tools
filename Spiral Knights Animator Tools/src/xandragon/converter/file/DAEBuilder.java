@@ -262,7 +262,10 @@ public class DAEBuilder {
 		base_scene.appendChild(scNode);
 		
 		//Then...
-		if (skin.boneIndices.size() == 0 || skin.boneWeights.size() == 0) {
+		
+		//NOTE: I'M COMMENTING THESE OUT SO THAT IT ALWAYS WORKS.
+		
+		//if (skin.boneIndices.size() == 0 || skin.boneWeights.size() == 0) {
 			//Bone data is not present in this model.
 			//Append the closing data.
 			Element trsMatrix = DOCUMENT.createElement("matrix");
@@ -288,7 +291,11 @@ public class DAEBuilder {
 			
 			//And then be done with it.
 			return;
-		}
+		//}
+		
+		//Continue
+		
+		
 	}
 	
 	protected void appendNewMaterial(Material mtl, String name) {

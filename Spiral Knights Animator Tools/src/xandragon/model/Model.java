@@ -3,6 +3,8 @@ package xandragon.model;
 import java.util.ArrayList;
 
 import xandragon.converter.ArrayConfig;
+import xandragon.model.math.Vector2f;
+import xandragon.model.math.Vector3f;
 
 /**
  * The class responsible for storing model data.
@@ -26,10 +28,13 @@ public class Model {
 	public ArrayList<Vector2f> uvs = new ArrayList<Vector2f>();
 	
 	/**An array of the stored bone indices in this model. Note: This must be cast to Integer when used, even though it's stored as a float.*/
-	public ArrayList<Float> boneIndices = new ArrayList<Float>();
+	public ArrayList<BoneIndex4i> boneIndices = new ArrayList<BoneIndex4i>();
 	
 	/**An array of the stored bone weights in this model*/
-	public ArrayList<Float> boneWeights = new ArrayList<Float>();
+	public ArrayList<BoneIndex4i> boneWeights = new ArrayList<BoneIndex4i>();
+	
+	/**An array of the stored bone names in this model*/
+	public ArrayList<Bone> bones = new ArrayList<Bone>();
 	
 	/**The geometry reference.*/
 	public Geometry geometry;
@@ -82,7 +87,7 @@ public class Model {
 	 * @param n Normal array
 	 * @param u UV array
 	 */
-	public Model(String modelName, ArrayList<Float> fa, ArrayList<Short> ind, ArrayConfig bi, ArrayConfig bw, ArrayConfig v, ArrayConfig n, ArrayConfig u) {
+	public Model(String modelName, ArrayList<Float> fa, ArrayList<Short> ind, ArrayList<Bone> boneData, ArrayConfig bi, ArrayConfig bw, ArrayConfig v, ArrayConfig n, ArrayConfig u) {
 		name = modelName;
 		floatArray = fa;
 		indices = ind;
@@ -91,11 +96,12 @@ public class Model {
 		vertexArray = v;
 		normalArray = n;
 		uvArray = u;
+		bones = boneData;
 		packArrays();
 		
 		geometry = new Geometry(vertices, normals, uvs, indices);
 		material = new Material();
-		skin = new Skin(new ArrayList<Float>(), new ArrayList<Float>()); //Should be boneIndices, boneWeights. I'm overriding this because it's not quite ready.
+		skin = new Skin(boneIndices, boneWeights, bones);
 	}
 	
 	////////////////////////
@@ -116,9 +122,8 @@ public class Model {
 				//Also get each of the values after its size.
 				//Here I'll need to check which ArrayConfig it is...
 				if (cfg == boneIndexArray || cfg == boneWeightArray) {
-					for (int i = 0; i < cfg.size; i++) {
-						toPack.add(floatArray.get(count + i));
-					}
+					BoneIndex4i val = new BoneIndex4i(floatArray.get(count + 0), floatArray.get(count + 1), floatArray.get(count + 2), floatArray.get(count + 3));
+					toPack.add(val);
 				} else if (cfg == vertexArray || cfg == normalArray) {
 					Vector3f val = new Vector3f(floatArray.get(count + 0), floatArray.get(count + 1), floatArray.get(count + 2));
 					toPack.add(val);
