@@ -20,5 +20,14 @@ public class Model {
 	public ArrayConfig normals;
 	public ArrayConfig uvs;
 	
-	
+	/**
+	 * Create an empty model, initializing the ArrayConfigs to a null value.
+	 */
+	public Model() {
+		boneIndices = null;
+		boneWeights = null;
+		vertices = null;
+		normals = null;
+		uvs = null;
+	}
 }

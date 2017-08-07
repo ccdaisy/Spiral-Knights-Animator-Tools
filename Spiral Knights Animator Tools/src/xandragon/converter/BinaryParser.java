@@ -8,10 +8,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.zip.InflaterInputStream;
 
+import javax.swing.tree.DefaultMutableTreeNode;
+
 import xandragon.converter.file.OBJBuilder;
+import xandragon.core.ui.tree.DataTreePath;
+import xandragon.core.ui.tree.Icon;
+import xandragon.core.ui.tree.Node;
+import xandragon.core.ui.tree.TreeRenderer;
 import xandragon.util.exception.InvalidDatException;
 import xandragon.util.stream.StreamHelper;
 import xandragon.util.Logger;
@@ -37,6 +42,9 @@ public class BinaryParser {
     /** The compressed format flag. */
     public static final short COMPRESSED_FORMAT_FLAG = 0x1000;
     
+    /** The icon database*/
+    protected static final Icon iconData = new Icon();
+    
 	/**
 	 * Instantiate a new BinaryParser, inputting the file to read as well as a logger for output.
 	 * @param _log The log to write to.
@@ -57,12 +65,12 @@ public class BinaryParser {
 	 * Pre-process data. This is only used by MainGui so that it can show the data tree before actually parsing the model data.
 	 * @param input_file The opened file.
 	 */
-	public ModelData preProcess(File input_file) throws IOException, InvalidDatException {
+	public DataTreePath preProcess(File input_file) throws IOException, InvalidDatException {
 		if ((input_file == null) || (input_file != null && input_file.exists() == false)) {
 			throw new FileNotFoundException("The file was not found!");
 		}
 		
-		ModelData modelData = new ModelData();
+		TreeRenderer renderer = new TreeRenderer(new Node("Model \""+input_file.getName()+"\"", iconData.model));
 		
 		FileInputStream fileInput = new FileInputStream(input_file);
 		DataInputStream stream = new DataInputStream(fileInput);
@@ -84,19 +92,19 @@ public class BinaryParser {
 		short compressedFlag = stream.readShort();
 		boolean isCompressed = (compressedFlag & COMPRESSED_FORMAT_FLAG) != 0;
 		
-		modelData.set("magic", "Model ID: "+StringTool.intToHex(magic, 0) + " (Valid)");
-		modelData.set("compressed", "Compressed: "+(isCompressed ? "True" : "False") + " ["+StringTool.intToHex(compressedFlag, 0)+"]");
+		renderer.addNodeRoot(new Node("Model tag: "+StringTool.intToHex(magic, 0) + " (Valid)", iconData.tag));
+		renderer.addNodeRoot(new Node("Compressed: "+(isCompressed ? "True" : "False") + " ["+StringTool.intToHex(compressedFlag, 0)+"]", iconData.tag));
 		
 		//ModelData(String _magicnumber, String _version, String _compressed, String _implementation, String _faSize, String _saSize)
 		
 		if (version == DEFAULT_VERSION) {
-			modelData.set("version", "Version: DEFAULT_VERSION [0x1002]");
+			renderer.addNodeRoot(new Node("Version: DEFAULT_VERSION [0x1002]", iconData.tag));
 		} else if (version == INTERMEDIATE_VERSION) {
-			modelData.set("version", "Version: INTERMEDIATE_VERSION [0x1001]");
+			renderer.addNodeRoot(new Node("Version: INTERMEDIATE_VERSION [0x1001]", iconData.tag));
 		} else if (version == CLASSIC_VERSION) {
-			modelData.set("version", "Version: CLASSIC_VERSION [0x1000]");
+			renderer.addNodeRoot(new Node("Version: CLASSIC_VERSION [0x1000]", iconData.tag));
 		} else {
-			modelData.set("version", "Version: UNKNOWN_VERSION ["+StringTool.intToHex(compressedFlag, 0)+"]");
+			renderer.addNodeRoot(new Node("Version: UNKNOWN_VERSION ["+StringTool.intToHex(compressedFlag, 0)+"]", iconData.tag));
 		}
 		
 		if (isCompressed) {
@@ -120,7 +128,8 @@ public class BinaryParser {
 		helper.skipNextControlCharacters();
 		data.skip(1);
 		String imp = helper.getDataUntilControl();
-		modelData.set("implementation", "Type: "+imp.substring(imp.lastIndexOf(".") + 1));
+		imp = imp.substring(imp.lastIndexOf(".") + 1);
+		renderer.addNodeRoot(new Node("Type: "+imp, Node.getIconFromImplementation(imp)));
 		
 		data.rewind();
 		int[] sequenceStartInit = StringTool.stringToIntArray("floatArray");
@@ -136,7 +145,6 @@ public class BinaryParser {
 		data.skip(4);
 		ArrayList<Float> floatArray = GetFloatArray(data);
 		int floatCount = floatArray.size();
-		modelData.set("faSize", "FloatArray (size="+String.valueOf(floatCount)+")");
 		
 		data.rewind();
 		int[] sequenceShort = StringTool.stringToIntArray("java.nio.ShortBuffer");
@@ -151,7 +159,9 @@ public class BinaryParser {
 		data.skip(2); //so skip those NULs
 		//Now we need to find the first short value. This value will be the length of the array.
 		short arrLen = data.readShort();
-		modelData.set("saSize", "Indices: "+String.valueOf(arrLen));
+		renderer.addNodeRoot(new Node("Indices: "+String.valueOf(arrLen), iconData.value));
+		
+		DefaultMutableTreeNode fArray = renderer.addNodeRoot(new Node("FloatArray (size="+String.valueOf(floatCount)+")", iconData.array));
 				
 		int allSize = 0;
 		int stride = 0;
@@ -161,39 +171,58 @@ public class BinaryParser {
 		stride = allSize * 4;
 		
 		if (canFindData(helper, "boneIndices")) {
-			modelData.setAll("boneIndicesCount", "Bone indices: "+String.valueOf((int) floatCount / stride * 4), "Stride: "+String.valueOf(stride), "Offset: "+String.valueOf(nextOffset));
-			modelData.setOffset("boneIndicesCount", "Offset: "+String.valueOf(nextOffset));
+			DefaultMutableTreeNode n = renderer.addNode(fArray, new Node("Bone indices: "+String.valueOf((int) floatCount / stride * 4), iconData.value));
+			renderer.addNode(n, new Node("Stride: "+String.valueOf(stride), iconData.value));
+			renderer.addNode(n, new Node("Offset: "+String.valueOf(nextOffset), iconData.value));
 			nextOffset += (4 * 4);
 		} else {
-			modelData.set("boneIndicesCount", "Bone indices: NONE");
+			DefaultMutableTreeNode n = renderer.addNode(fArray, new Node("Bone indices: NONE", iconData.value));
+			renderer.addNode(n, new Node("Stride: --", iconData.value));
+			renderer.addNode(n, new Node("Offset: --", iconData.value));
 		}
 		if (canFindData(helper, "boneWeights")) {
-			modelData.setAll("boneWeightsCount", "Bone weights: "+String.valueOf((int) (floatCount - nextOffset) / stride * 4), "Stride: "+String.valueOf(stride), "Offset: "+String.valueOf(nextOffset));
+			DefaultMutableTreeNode n = renderer.addNode(fArray, new Node("Bone weights: "+String.valueOf((int) floatCount / stride * 4), iconData.value));
+			renderer.addNode(n, new Node("Stride: "+String.valueOf(stride), iconData.value));
+			renderer.addNode(n, new Node("Offset: "+String.valueOf(nextOffset), iconData.value));
 			nextOffset += (4 * 4);
 		} else {
-			modelData.set("boneWeightsCount", "Bone weights: NONE");
+			DefaultMutableTreeNode n = renderer.addNode(fArray, new Node("Bone weights: NONE", iconData.value));
+			renderer.addNode(n, new Node("Stride: --", iconData.value));
+			renderer.addNode(n, new Node("Offset: --", iconData.value));
 		}
 		if (canFindData(helper, "texCoordArray")) {
-			modelData.setAll("uvArrayCount", "UV coords: "+String.valueOf((int) (floatCount - nextOffset) / stride * 2), "Stride: "+String.valueOf(stride), "Offset: "+String.valueOf(nextOffset));
+			DefaultMutableTreeNode n = renderer.addNode(fArray, new Node("UV Coords: "+String.valueOf((int) floatCount / stride * 4), iconData.value));
+			renderer.addNode(n, new Node("Stride: "+String.valueOf(stride), iconData.value));
+			renderer.addNode(n, new Node("Offset: "+String.valueOf(nextOffset), iconData.value));
 			nextOffset += (4 * 2);
 		} else {
-			modelData.set("uvArrayCount", "UV coords: NONE");
+			DefaultMutableTreeNode n = renderer.addNode(fArray, new Node("UV Coords: NONE", iconData.value));
+			renderer.addNode(n, new Node("Stride: --", iconData.value));
+			renderer.addNode(n, new Node("Offset: --", iconData.value));
 		}
 		if (canFindData(helper, "normalArray")) {
-			modelData.setAll("normalArrayCount", "Normals: "+String.valueOf((int) (floatCount - nextOffset) / stride * 3), "Stride: "+String.valueOf(stride), "Offset: "+String.valueOf(nextOffset));
+			DefaultMutableTreeNode n = renderer.addNode(fArray, new Node("Normals: "+String.valueOf((int) floatCount / stride * 4), iconData.value));
+			renderer.addNode(n, new Node("Stride: "+String.valueOf(stride), iconData.value));
+			renderer.addNode(n, new Node("Offset: "+String.valueOf(nextOffset), iconData.value));
 			nextOffset += (4 * 3);
 		} else {
-			modelData.set("normalArrayCount", "Normals: NONE");
+			DefaultMutableTreeNode n = renderer.addNode(fArray, new Node("Normals: NONE", iconData.value));
+			renderer.addNode(n, new Node("Stride: --", iconData.value));
+			renderer.addNode(n, new Node("Offset: --", iconData.value));
 		}
 		if (canFindData(helper, "vertexArray")) {
-			modelData.setAll("vertexArrayCount", "Vertices: "+String.valueOf((int) (floatCount - nextOffset) / stride * 3), "Stride: "+String.valueOf(stride), "Offset: "+String.valueOf(nextOffset));
+			DefaultMutableTreeNode n = renderer.addNode(fArray, new Node("Vertices: "+String.valueOf((int) floatCount / stride * 4), iconData.value));
+			renderer.addNode(n, new Node("Stride: "+String.valueOf(stride), iconData.value));
+			renderer.addNode(n, new Node("Offset: "+String.valueOf(nextOffset), iconData.value));
 			nextOffset += (4 * 3);
 		} else {
-			modelData.set("vertexArrayCount", "Vertices: NONE");
+			DefaultMutableTreeNode n = renderer.addNode(fArray, new Node("Vertices: NONE", iconData.value));
+			renderer.addNode(n, new Node("Stride: --", iconData.value));
+			renderer.addNode(n, new Node("Offset: --", iconData.value));
 		}
 		//modelData.set("attachments", "Attachments: ");
 		
-		return modelData;
+		return renderer.getDataTreePath();
 	}
 	
 	
@@ -422,54 +451,5 @@ public class BinaryParser {
 			e.printStackTrace();
 		}
 		return floatArray;
-	}
-	
-	public class ModelData {
-		protected HashMap<String, String> store = new HashMap<String, String>();
-		protected HashMap<String, String> strides = new HashMap<String, String>();
-		protected HashMap<String, String> offsets = new HashMap<String, String>();
-				
-		public void set(String index, String value) {
-			store.put(index, value);
-		}
-		
-		public void setStride(String index, String value) {
-			strides.put(index, value);
-		}
-		
-		public void setOffset(String index, String value) {
-			offsets.put(index, value);
-		}
-		
-		public void setAll(String index, String value, String stride, String offset) {
-			store.put(index, value);
-			strides.put(index, stride);
-			offsets.put(index, offset);
-		}
-		
-		public String get(String index) {
-			if (!store.containsKey(index)) {
-				return "NULL";
-			}
-			return store.get(index);
-		}
-		
-		public String getStride(String index) {
-			if (!strides.containsKey(index)) {
-				return "NULL";
-			}
-			return strides.get(index);
-		}
-		
-		public String getOffset(String index) {
-			if (!offsets.containsKey(index)) {
-				return "NULL";
-			}
-			return offsets.get(index);
-		}
-		
-		public String formatGet(String index, String formatString) {
-			return formatString.replace("<<VAL>>", get(index));
-		}
 	}
 }

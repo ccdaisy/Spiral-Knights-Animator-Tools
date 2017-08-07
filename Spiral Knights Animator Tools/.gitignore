@@ -5,3 +5,4 @@
 *.xml
 *.launch
 *converterResourceDir*
+/bin/

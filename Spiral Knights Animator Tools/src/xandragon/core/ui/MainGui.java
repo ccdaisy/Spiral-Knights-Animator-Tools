@@ -7,12 +7,12 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 import javax.swing.*;
-import javax.swing.event.TreeModelListener;
 import javax.swing.tree.*;
 
 import xandragon.converter.BinaryParser;
-import xandragon.converter.BinaryParser.ModelData;
-import xandragon.util.CustomTreeCellRenderer;
+import xandragon.core.ui.tree.CustomTreeCellRenderer;
+import xandragon.core.ui.tree.DataTreePath;
+import xandragon.core.ui.tree.TreeRenderer;
 import xandragon.util.Logger;
 import xandragon.util.exception.InvalidDatException;
 import xandragon.util.filedata.DataPersistence;
@@ -57,7 +57,7 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 		chooser = new JFileChooser(dataPersistence.getSavedResourceDirectory());
 		chooser.setAcceptAllFileFilterUsed(false);
 		UI_Label = new TextArea("Welcome to Spiral Knights Animator Tools.\nPlease select a model.\n", 0, 0, TextArea.SCROLLBARS_NONE);
-		dataTree = new JTree(createNode(new Entry("(no model to view)")));
+		dataTree = TreeRenderer.createBlankTree();
 		openButton = new Button("Open a model...");
 		saveButton = new Button("Save model as...");
 		setRsrcButton = new Button("Set resource directory...");
@@ -103,58 +103,22 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 		binaryParser.setLog(log);
 	}
 	
-	protected void updateTree(String name) {
+	protected void resetTree() {
 		try {
-			dataTree.setModel(new DataTreePath(createNode(new Entry(name))));
+			dataTree.setModel(TreeRenderer.createBlankTreePath());
 			dataTree.setCellRenderer(new DefaultTreeCellRenderer());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
-	protected void updateTree(ModelData data, String name) {
+	protected void updateTree(DataTreePath dataTreePath) {
 		try {
-			DefaultMutableTreeNode root = createNode(new Entry("Model \""+name+"\""));
-			
-			addNode(root, new Entry(data, "magic"));
-			addNode(root, new Entry(data, "version"));
-			addNode(root, new Entry(data, "compressed"));
-			addNode(root, new Entry(data, "implementation"));
-			addNode(root, new Entry(data, "saSize"));
-			DefaultMutableTreeNode floatArray = addNode(root, new Entry(data, "faSize"));
-			DefaultMutableTreeNode boneIndices = addNode(floatArray, new Entry(data, "boneIndicesCount"));
-			addNode(boneIndices, new Entry(data, "boneIndicesCount", DataType.STRIDE));
-			addNode(boneIndices, new Entry(data, "boneIndicesCount", DataType.OFFSET));
-			DefaultMutableTreeNode boneWeights = addNode(floatArray, new Entry(data, "boneWeightsCount"));
-			addNode(boneWeights, new Entry(data, "boneWeightsCount", DataType.STRIDE));
-			addNode(boneWeights, new Entry(data, "boneWeightsCount", DataType.OFFSET));
-			DefaultMutableTreeNode vertices = addNode(floatArray, new Entry(data, "vertexArrayCount"));
-			addNode(vertices, new Entry(data, "vertexArrayCount", DataType.STRIDE));
-			addNode(vertices, new Entry(data, "vertexArrayCount", DataType.OFFSET));
-			DefaultMutableTreeNode normals = addNode(floatArray, new Entry(data, "normalArrayCount"));
-			addNode(normals, new Entry(data, "normalArrayCount", DataType.STRIDE));
-			addNode(normals, new Entry(data, "normalArrayCount", DataType.OFFSET));
-			DefaultMutableTreeNode uvs = addNode(floatArray, new Entry(data, "uvArrayCount"));
-			addNode(uvs, new Entry(data, "uvArrayCount", DataType.STRIDE));
-			addNode(uvs, new Entry(data, "uvArrayCount", DataType.OFFSET));
-			
-			dataTree.setModel(new DataTreePath(root));
+			dataTree.setModel(dataTreePath);
 			dataTree.setCellRenderer(new CustomTreeCellRenderer());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
-	
-	protected DefaultMutableTreeNode createNode(Entry entry) {
-		DefaultMutableTreeNode node = new DefaultMutableTreeNode(entry);
-		return node;
-	}
-	
-	protected DefaultMutableTreeNode addNode(DefaultMutableTreeNode in, Entry entry) {
-		DefaultMutableTreeNode node = new DefaultMutableTreeNode(entry);
-		node.setUserObject(entry);
-		in.add(node);
-		return node;
 	}
 	
 	@Override
@@ -205,16 +169,16 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 					if (INPUT_FILE.exists()) {
 						log.ClearLog();
 						try {
-							updateTree(binaryParser.preProcess(INPUT_FILE), INPUT_FILE.getName());
+							updateTree(binaryParser.preProcess(INPUT_FILE));
 							saveButton.setEnabled(true);
 						} catch (IOException e) {
 							log.AppendLn("A critical read exception occurred and conversion was not able to continue.");
-							updateTree("(no model to view)");
+							resetTree();
 							saveButton.setEnabled(false);
 						} catch (InvalidDatException e) {
 							log.AppendLn(e.getMessage());
 							log.AppendLn("Reading is unable to continue.");
-							updateTree("(no model to view)");
+							resetTree();
 							saveButton.setEnabled(false);
 						}
 					} else {
@@ -229,39 +193,6 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 		}
 	}
 	
-	public class Entry {
-		public String entryName;
-		public String idName;
-		
-		/**
-		 * Construct a new Entry value
-		 * @param value The display text for said entry.
-		 */
-		public Entry(String value) {
-			entryName = value;
-			idName = "NULL";
-		}
-		
-		public Entry(ModelData data, String idx) {
-			entryName = data.get(idx);
-			idName = idx;
-		}
-		
-		public Entry(ModelData data, String idx, DataType type) {
-			if (type == DataType.STRIDE) {
-				entryName = data.getStride(idx);
-			} else if (type == DataType.OFFSET) {
-				entryName = data.getOffset(idx);
-			}
-			idName = idx;
-		}
-		
-		@Override
-		public String toString() {
-			return entryName;
-		}
-	}
-	
 	protected static enum DataType {
 		STRIDE,
 		OFFSET
@@ -272,51 +203,6 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 		OPEN,
 		SAVE,
 		SET
-	}
-	
-	protected class DataTreePath implements TreeModel {
-		protected DefaultMutableTreeNode root = null;
-		
-		public DataTreePath(DefaultMutableTreeNode _root) {
-			root = _root;
-		}
-		
-		@Override
-		public void addTreeModelListener(TreeModelListener l) {}
-
-		@Override
-		public Object getChild(Object parent, int index) {
-			DefaultMutableTreeNode par = (DefaultMutableTreeNode) parent;
-			return par.getChildAt(index);
-		}
-
-		@Override
-		public int getChildCount(Object parent) {
-			DefaultMutableTreeNode par = (DefaultMutableTreeNode) parent;
-			return par.getChildCount();
-		}
-
-		@Override
-		public int getIndexOfChild(Object parent, Object child) {
-			DefaultMutableTreeNode par = (DefaultMutableTreeNode) parent;
-			return par.getIndex((TreeNode) child);
-		}
-
-		@Override
-		public Object getRoot() {
-			return root;
-		}
-
-		@Override
-		public boolean isLeaf(Object node) {
-			return ((DefaultMutableTreeNode) node).isLeaf();
-		}
-
-		@Override
-		public void removeTreeModelListener(TreeModelListener l) {}
-
-		@Override
-		public void valueForPathChanged(TreePath path, Object newValue) {}
 	}
 	
 	@Override
