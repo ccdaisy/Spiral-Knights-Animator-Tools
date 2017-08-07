@@ -13,6 +13,7 @@
  
 **Fix note:** Actually, offset seems to be calculated!
 The equasion is: `lastOffset + (thisSize * 4) = nextOffset`, and it's consistent.
+```
 boneIndices(Offset=0, Stride=64, Size=4)
 boneWeights(Offset=16, Stride=64, Size=4)
 texCoords(Offset=32, Stride=64, Size=2)
@@ -24,7 +25,7 @@ boneIndices = 0
 16 + (4 * 4) = 32 (texCoords)
 32 + (2 * 4) = 40 (normals)
 40 + (3 * 4) = 52 (vertices)
- 
+```
 
 # Live issues
  
