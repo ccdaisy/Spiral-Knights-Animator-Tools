@@ -38,6 +38,10 @@ public class Color {
 	}
 	
 	public String toDAEFormat() {
-		return String.valueOf(r) + " " + String.valueOf(g) + " " + String.valueOf(b) + "  0";
+		return String.valueOf(r) + " " + String.valueOf(g) + " " + String.valueOf(b) + " 1";
+	}
+	
+	public String toDAEFormat(String alpha) {
+		return String.valueOf(r) + " " + String.valueOf(g) + " " + String.valueOf(b) + " " + alpha;
 	}
 }

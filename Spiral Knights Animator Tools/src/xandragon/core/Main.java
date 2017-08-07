@@ -5,9 +5,12 @@ import java.io.IOException;
 
 import xandragon.converter.BinaryParser;
 import xandragon.core.ui.MainGui;
+import xandragon.model.Model;
 import xandragon.util.exception.InvalidDatException;
 import xandragon.util.filedata.FileValidator;
 import xandragon.util.Logger;
+
+import xandragon.converter.file.*;
 
 public class Main {
 	
@@ -18,9 +21,9 @@ public class Main {
 	protected static File OUTPUT_FILE = null;
 	
 	/**The output logging system.*/
-	protected static Logger log = null; //This is set to null initially. It is actually set when we determine what to use.
+	protected static Logger log = null; //This is set to null initially. It is actually set when we determine what to use (console vs ui).
 	
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception { //I'm so lazy. "throws Exception". Wow.
 		int ArgCount = args.length;
 		BinaryParser parser = new BinaryParser(log = new Logger());
 		if (ArgCount == 0) {
@@ -46,14 +49,25 @@ public class Main {
 				return;
 			}
 			
-			String outputExt = FileValidator.getFileExtension(OUTPUT_FILE);
+			String outputExt = FileValidator.getFileExtension(OUTPUT_FILE).toLowerCase();
 			if (!FileValidator.isValidOutput(outputExt)) {
 				log.AppendLn("[ERROR] Invalid output extension \""+outputExt+"\"! Expected the extension(s): {"+FileValidator.getInputList()+"}");
 				return;
 			}
 			
 			try {
-				parser.startProcessing(INPUT_FILE, OUTPUT_FILE);
+				Model mdl = parser.startProcessing(INPUT_FILE, OUTPUT_FILE);
+				OUTPUT_FILE.createNewFile();
+				if (outputExt.matches("obj")) {
+					OBJBuilder builder = new OBJBuilder(OUTPUT_FILE);
+					builder.createObj(mdl);
+				} else if (outputExt.matches("dae")) {
+					DAEBuilder builder = new DAEBuilder(OUTPUT_FILE);
+					builder.createDAE(mdl);
+				} else if (outputExt.matches("xml")) {
+					log.AppendLn("[WARNING] XML Exporting is not ready yet. Please save as another format.");
+				}
+				log.AppendLn("Conversion complete.");
 			} catch (IOException e) {
 				log.AppendLn("A critical read exception occurred and conversion was not able to continue.");
 			} catch (InvalidDatException e) {

@@ -3,6 +3,7 @@ package xandragon.converter.file;
 import java.io.*;
 import java.util.ArrayList;
 
+import xandragon.model.Model;
 import xandragon.converter.ArrayConfig;
 
 public class OBJBuilder {
@@ -55,6 +56,10 @@ public class OBJBuilder {
 	public void close() throws IOException {
 		bw.flush();
 		bw.close();
+	}
+	
+	public void createObj(Model m) throws IOException {
+		autoWrite(m.floatArray, m.vertexArray, m.normalArray, m.uvArray, m.indices);
 	}
 	
 	public void autoWrite(ArrayList<Float> floatArray, ArrayConfig vertexArray, ArrayConfig normalArray, ArrayConfig uvArray, ArrayList<Short> inds) throws IOException {

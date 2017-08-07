@@ -10,12 +10,15 @@ import javax.swing.*;
 import javax.swing.tree.*;
 
 import xandragon.converter.BinaryParser;
+import xandragon.converter.file.*;
 import xandragon.core.ui.tree.CustomTreeCellRenderer;
 import xandragon.core.ui.tree.DataTreePath;
 import xandragon.core.ui.tree.TreeRenderer;
+import xandragon.model.Model;
 import xandragon.util.Logger;
 import xandragon.util.exception.InvalidDatException;
 import xandragon.util.filedata.DataPersistence;
+import xandragon.util.filedata.FileValidator;
 import xandragon.util.filedata.OpenFileFilter;
 
 @SuppressWarnings("serial")
@@ -35,7 +38,7 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 	protected OpenFileFilter DAE = new OpenFileFilter("DAE", "Collada DAE");
 	protected OpenFileFilter OBJ = new OpenFileFilter("OBJ", "Wavefront OBJ");
 	protected OpenFileFilter XML = new OpenFileFilter("XML", "Spiral Spy XML");
-	protected OpenFileFilter DIR = new OpenFileFilter("Directory", "Select a file directory");
+	protected OpenFileFilter DIR = new OpenFileFilter(true);
 	
 	//Files.
 	protected File INPUT_FILE;
@@ -159,7 +162,29 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 				if (fileMode == SelectType.SAVE) {
 					OUTPUT_FILE = chooser.getSelectedFile();
 					try {
-						binaryParser.startProcessing(INPUT_FILE, OUTPUT_FILE);
+						OpenFileFilter current = (OpenFileFilter) chooser.getFileFilter();
+						if (current == OBJ) {
+							System.out.println(OUTPUT_FILE.getPath());
+							if (FileValidator.getFileExtension(OUTPUT_FILE).toLowerCase() != "obj") {
+								OUTPUT_FILE = new File(OUTPUT_FILE.getPath() + ".obj");
+							}
+							Model mdl = binaryParser.startProcessing(INPUT_FILE, OUTPUT_FILE);
+							
+							OBJBuilder builder = new OBJBuilder(OUTPUT_FILE);
+							builder.createObj(mdl);
+							log.AppendLn("Conversion complete.");
+						} else if (current == DAE) {
+							if (FileValidator.getFileExtension(OUTPUT_FILE).toLowerCase() != "dae") {
+								OUTPUT_FILE = new File(OUTPUT_FILE.getPath() + ".dae");
+							}
+							Model mdl = binaryParser.startProcessing(INPUT_FILE, OUTPUT_FILE);
+							
+							DAEBuilder builder = new DAEBuilder(OUTPUT_FILE);
+							builder.createDAE(mdl);
+							log.AppendLn("Conversion complete.");
+						} else if (current == XML) {
+							log.AppendLn("[WARNING] XML Exporting is not ready yet. Please save as another format.");
+						}
 					} catch (Exception e) {
 						//NOTE: If we hit this point in the GUI, any errors that would occur during read would already be handled by preProcess.
 						e.printStackTrace();

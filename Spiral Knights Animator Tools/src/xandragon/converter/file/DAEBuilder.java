@@ -1,10 +1,17 @@
 package xandragon.converter.file;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
@@ -13,8 +20,14 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Text;
 
+import xandragon.model.Geometry;
+import xandragon.model.Material;
+import xandragon.model.Model;
+import xandragon.model.Skin;
+
 @SuppressWarnings("unused")
 public class DAEBuilder {
+	protected File OUTPUT_FILE;
 	protected Document DOCUMENT;
 	protected Element ROOT;
 	private Element lib_images;
@@ -26,10 +39,11 @@ public class DAEBuilder {
 	private Element lib_visual_scene;
 	private Element base_scene;
 	
-	public DAEBuilder() throws ParserConfigurationException {
+	public DAEBuilder(File out) throws ParserConfigurationException {
 		DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 		DOCUMENT = docBuilder.newDocument();
+		OUTPUT_FILE = out;
 		
 		/////////////////////////////////////
 		//PART 1: CREATE ROOT AND BASE DATA//
@@ -43,32 +57,32 @@ public class DAEBuilder {
 		
 		
 		//////CREATE METADATA
-		Element Asset = DOCUMENT.createElement("asset");
-		Element Contributor = DOCUMENT.createElement("contributor");
-		Element AuthorElement = DOCUMENT.createElement("author");
-		Element AuthoringTool = DOCUMENT.createElement("authoring_tool");
-		Element Unit = DOCUMENT.createElement("unit");
-		Element UpAxis = DOCUMENT.createElement("up_axis");
+		Element asset = DOCUMENT.createElement("asset");
+		Element contributor = DOCUMENT.createElement("contributor");
+		Element authorElement = DOCUMENT.createElement("author");
+		Element authoringTool = DOCUMENT.createElement("authoring_tool");
+		Element unit = DOCUMENT.createElement("unit");
+		Element upAxis = DOCUMENT.createElement("up_axis");
 		
-		Text Author = DOCUMENT.createTextNode("Brent \"Xan the Dragon\" D.");
-		Text Tool = DOCUMENT.createTextNode("Spiral Knights Model Converter");
-		Text UpAxisTxt = DOCUMENT.createTextNode("Z_UP");
+		Text author = DOCUMENT.createTextNode("Xan the Dragon");
+		Text tool = DOCUMENT.createTextNode("Spiral Knights Animator Tools");
+		Text upAxisTxt = DOCUMENT.createTextNode("Z_UP");
 		
-		AuthorElement.appendChild(Author);
-		AuthoringTool.appendChild(Tool);
+		authorElement.appendChild(author);
+		authoringTool.appendChild(tool);
 		
-		Contributor.appendChild(AuthorElement);
-		Contributor.appendChild(AuthoringTool);
+		contributor.appendChild(authorElement);
+		contributor.appendChild(authoringTool);
 				
-		UpAxis.appendChild(UpAxisTxt);
+		upAxis.appendChild(upAxisTxt);
 		
-		Unit.setAttribute("meter", "1");
-		Unit.setAttribute("name", "meter");
+		unit.setAttribute("meter", "1");
+		unit.setAttribute("name", "meter");
 		
-		Asset.appendChild(Contributor);
-		Asset.appendChild(UpAxis);
-		Asset.appendChild(Unit);
-		ROOT.appendChild(Asset);
+		asset.appendChild(contributor);
+		asset.appendChild(upAxis);
+		asset.appendChild(unit);
+		ROOT.appendChild(asset);
 		
 		//////////////////////////////////
 		//PART 2: CREATE DATA CONTAINERS//
@@ -95,96 +109,318 @@ public class DAEBuilder {
 		//Create library_visual_scenes element
 		lib_visual_scene = DOCUMENT.createElement("library_visual_scenes");
 		
-		
+		base_scene = DOCUMENT.createElement("visual_scene");
+ 		base_scene.setAttribute("id", "Scene");
+ 		base_scene.setAttribute("name", "Scene");
+ 		lib_visual_scene.appendChild(base_scene);
 	}
 	
-	public void AppendNewMaterial() {
+	@SuppressWarnings("rawtypes")
+	protected Element appendGeometryData(Geometry geo, ArrayList data, String type, String name) {
+		String list = "";
+		if (data == geo.vertices) {
+			list = geo.createVertexList();
+		} else if (data == geo.normals) {
+			list = geo.createNormalList();
+		} else if (data == geo.uvs) {
+			list = geo.createUVList();
+		}
+		
+		int sizeVal = data.size() * (data == geo.uvs ? 2 : 3);
+		
+		//Source
+		Element src = DOCUMENT.createElement("source");
+		src.setAttribute("id", name+"-mesh-"+type);
+		
+		//Array
+		Element arrayHeading = DOCUMENT.createElement("float_array");
+		arrayHeading.setAttribute("id", name+"-mesh-"+type+"-array");
+		arrayHeading.setAttribute("count", String.valueOf(sizeVal));
+		Text arrayText = DOCUMENT.createTextNode(list);
+		arrayHeading.appendChild(arrayText);
+		src.appendChild(arrayHeading);
+		
+		//Technique
+		Element technique = DOCUMENT.createElement("technique_common");
+		src.appendChild(technique);
+		
+		//Accessor
+		Element accessor = DOCUMENT.createElement("accessor");
+		accessor.setAttribute("source", "#"+name+"-mesh-"+type+"-array");
+		accessor.setAttribute("count", String.valueOf(sizeVal / (data == geo.uvs ? 2 : 3)));
+		accessor.setAttribute("stride", data == geo.uvs ? "2" : "3");
+		technique.appendChild(accessor);
+		
+		//Parameters
+		if (data == geo.uvs) {
+			Element paramS = DOCUMENT.createElement("param");
+			Element paramT = DOCUMENT.createElement("param");
+			
+			paramS.setAttribute("name", "S");
+			paramT.setAttribute("name", "T");
+			paramS.setAttribute("type", "float");
+			paramT.setAttribute("type", "float");
+			
+			accessor.appendChild(paramS);
+			accessor.appendChild(paramT);
+		} else {
+			Element paramX = DOCUMENT.createElement("param");
+			Element paramY = DOCUMENT.createElement("param");
+			Element paramZ = DOCUMENT.createElement("param");
+			
+			paramX.setAttribute("name", "X");
+			paramY.setAttribute("name", "Y");
+			paramZ.setAttribute("name", "Z");
+			paramX.setAttribute("type", "float");
+			paramY.setAttribute("type", "float");
+			paramZ.setAttribute("type", "float");
+			
+			accessor.appendChild(paramX);
+			accessor.appendChild(paramY);
+			accessor.appendChild(paramZ);
+		}
+		
+		return src;
+	}
+	
+	protected void appendNewGeometry(Geometry geo, String name) {
+		//PRE-WRITE: GET VALUES FROM GEOMETRY.
+		int vertexSize = geo.vertices.size();
+		int normalSize = geo.normals.size();
+		int uvSize = geo.uvs.size();
+		
+		///////////////////
+		//PART 1: HEADING//
+		///////////////////	
+		Element geometryId = DOCUMENT.createElement("geometry");
+		geometryId.setAttribute("id", name+"-mesh");
+		geometryId.setAttribute("name", name);
+		Element mesh = DOCUMENT.createElement("mesh");
+		geometryId.appendChild(mesh);
+		
+		////////////////////
+		//PART 2: RAW DATA//
+		////////////////////	
+		mesh.appendChild(appendGeometryData(geo, geo.vertices, "positions", name));
+		mesh.appendChild(appendGeometryData(geo, geo.normals, "normals", name));
+		mesh.appendChild(appendGeometryData(geo, geo.uvs, "map-0", name));
+		
+		//////////////////////
+		//PART 3: REFERENCES//
+		//////////////////////
+		Element vertices = DOCUMENT.createElement("vertices");
+ 		vertices.setAttribute("id", name+"-mesh-vertices");
+ 		mesh.appendChild(vertices);
+ 		
+ 		Element posInput = DOCUMENT.createElement("input");
+ 		posInput.setAttribute("semantic", "POSITION");
+ 		posInput.setAttribute("source", "#"+name+"-mesh-positions");
+ 		vertices.appendChild(posInput);
+ 		
+ 		Element triangleList = DOCUMENT.createElement("triangles");
+ 		triangleList.setAttribute("count", String.valueOf(geo.indices.size()));
+ 		triangleList.setAttribute("material", "Material-material");
+ 		mesh.appendChild(triangleList);
+ 		
+ 		Element vtxInput = DOCUMENT.createElement("input");
+ 		vtxInput.setAttribute("semantic", "VERTEX");
+ 		vtxInput.setAttribute("source", "#"+name+"-mesh-vertices");
+ 		vtxInput.setAttribute("offset", "0");
+ 		triangleList.appendChild(vtxInput);
+ 		
+ 		Element nrmInput = DOCUMENT.createElement("input");
+ 		nrmInput.setAttribute("semantic", "NORMAL");
+ 		nrmInput.setAttribute("source", "#"+name+"-mesh-normals");
+ 		nrmInput.setAttribute("offset", "0");
+ 		triangleList.appendChild(nrmInput);
+ 		
+ 		Element uvInput = DOCUMENT.createElement("input");
+ 		uvInput.setAttribute("semantic", "TEXCOORD");
+ 		uvInput.setAttribute("source", "#"+name+"-mesh-map-0");
+ 		uvInput.setAttribute("offset", "0");
+ 		uvInput.setAttribute("set", "0");
+ 		triangleList.appendChild(uvInput);
+ 		
+ 		////////////////////
+ 		//PART 4: INDEXING//
+ 		////////////////////
+ 		Element idxElement = DOCUMENT.createElement("p");
+ 		Text idxValue = DOCUMENT.createTextNode(geo.createIndexList());
+ 		idxElement.appendChild(idxValue);
+ 		triangleList.appendChild(idxElement);
+ 		
+ 		//Complete:
+ 		lib_geometry.appendChild(geometryId);
+	}
+	
+	protected void appendNewBoneData(Skin skin, String name) {
+		//Append the base scene data.
+		Element scNode = DOCUMENT.createElement("node");
+		scNode.setAttribute("id", name);
+		scNode.setAttribute("name", name);
+		scNode.setAttribute("type", "NODE");
+		base_scene.appendChild(scNode);
+		
+		//Then...
+		if (skin.boneIndices.size() == 0 || skin.boneWeights.size() == 0) {
+			//Bone data is not present in this model.
+			//Append the closing data.
+			Element trsMatrix = DOCUMENT.createElement("matrix");
+			trsMatrix.setAttribute("sid", "transform");
+			Text mtxVal = DOCUMENT.createTextNode("1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"); //Identity matrix.
+			trsMatrix.appendChild(mtxVal);
+			scNode.appendChild(trsMatrix);
+			
+			Element geoInstance = DOCUMENT.createElement("instance_geometry");
+			geoInstance.setAttribute("url", "#"+name+"-mesh");
+			geoInstance.setAttribute("name", name);
+			scNode.appendChild(geoInstance);
+			
+			Element mtlBinding = DOCUMENT.createElement("bind_material");
+			geoInstance.appendChild(mtlBinding);
+			Element technique = DOCUMENT.createElement("technique_common");
+			mtlBinding.appendChild(technique);
+			
+			Element mtlInstance = DOCUMENT.createElement("instance_material");
+			mtlInstance.setAttribute("symbol", "Material-material");
+			mtlInstance.setAttribute("target", "#Material-material");
+			technique.appendChild(mtlInstance);
+			
+			//And then be done with it.
+			return;
+		}
+	}
+	
+	protected void appendNewMaterial(Material mtl, String name) {
+		////////////////////////////
+		//PART 1: MATERIAL HEADING//
+		////////////////////////////
+		Element materialId = DOCUMENT.createElement("material");
+		materialId.setAttribute("id", name+"-material");
+		materialId.setAttribute("name", name);
+		
+		Element mtlEffect = DOCUMENT.createElement("effect");
+		mtlEffect.setAttribute("id", "Material-effect");
+		
+		Element mtlProfile = DOCUMENT.createElement("profile_COMMON");
+		Element mtlTechnique = DOCUMENT.createElement("technique");
+		Element shadeType = DOCUMENT.createElement("phong");
+		
+		mtlTechnique.setAttribute("sid", "common");
+		
+		mtlEffect.appendChild(mtlProfile);
+		mtlProfile.appendChild(mtlTechnique);
+		mtlTechnique.appendChild(shadeType);
+		
 		/////////////////////////
-		//PART 3: MATERIAL DATA//
+		//PART 2: MATERIAL DATA//
 		/////////////////////////
-		Element MatEffect = DOCUMENT.createElement("effect");
-		MatEffect.setAttribute("id", "Material-effect");
-		lib_effects.appendChild(MatEffect);
 		
-		Element MatProfile = DOCUMENT.createElement("profile_COMMON");
-		Element MatTechnique = DOCUMENT.createElement("technique");
-		Element ShadeType = DOCUMENT.createElement("phong");
+		Element emission = DOCUMENT.createElement("emission");
+		Element ambient = DOCUMENT.createElement("ambient");
+		Element diffuse = DOCUMENT.createElement("diffuse");
+		Element specular = DOCUMENT.createElement("specular");
+		Element shininess = DOCUMENT.createElement("shininess");
+		Element refraction = DOCUMENT.createElement("index_of_refraction");
+		shadeType.appendChild(emission);
+		shadeType.appendChild(ambient);
+		shadeType.appendChild(diffuse);
+		shadeType.appendChild(specular);
+		shadeType.appendChild(shininess);
+		shadeType.appendChild(refraction);
 		
-		MatTechnique.setAttribute("sid", "common");
-		
-		MatEffect.appendChild(MatProfile);
-		MatProfile.appendChild(MatTechnique);
-		MatTechnique.appendChild(ShadeType);
-		
-		Element Emission = DOCUMENT.createElement("emission");
-		Element Ambient = DOCUMENT.createElement("ambient");
-		Element Diffuse = DOCUMENT.createElement("diffuse");
-		Element Specular = DOCUMENT.createElement("specular");
-		Element Shininess = DOCUMENT.createElement("shininess");
-		Element Refraction = DOCUMENT.createElement("index_of_refraction");
-		ShadeType.appendChild(Emission);
-		ShadeType.appendChild(Ambient);
-		ShadeType.appendChild(Diffuse);
-		ShadeType.appendChild(Specular);
-		ShadeType.appendChild(Shininess);
-		ShadeType.appendChild(Refraction);
-		
-		Element Color_Emission = DOCUMENT.createElement("color");
-		Color_Emission.setAttribute("sid", "emission");
-		Emission.appendChild(Color_Emission);
-		Text Value_Emission = DOCUMENT.createTextNode("0 0 0 1");
-		Color_Emission.appendChild(Value_Emission);
+		Element color_Emission = DOCUMENT.createElement("color");
+		color_Emission.setAttribute("sid", "emission");
+		emission.appendChild(color_Emission);
+		Text value_Emission = DOCUMENT.createTextNode(mtl.emission.toDAEFormat());
+		color_Emission.appendChild(value_Emission);
 		
 		
-		Element Color_Ambient = DOCUMENT.createElement("color");
-		Color_Ambient.setAttribute("sid", "ambient");
-		Ambient.appendChild(Color_Ambient);
-		Text Value_Ambient = DOCUMENT.createTextNode("0 0 0 1");
-		Color_Ambient.appendChild(Value_Ambient);
+		Element color_Ambient = DOCUMENT.createElement("color");
+		color_Ambient.setAttribute("sid", "ambient");
+		ambient.appendChild(color_Ambient);
+		Text value_Ambient = DOCUMENT.createTextNode(mtl.ambient.toDAEFormat());
+		color_Ambient.appendChild(value_Ambient);
 		
 		
-		Element Color_Diffuse = DOCUMENT.createElement("color");
-		Color_Diffuse.setAttribute("sid", "diffuse");
-		Diffuse.appendChild(Color_Diffuse);
-		Text Value_Diffuse = DOCUMENT.createTextNode("1 1 1 1");
-		Color_Diffuse.appendChild(Value_Diffuse);
+		Element color_Diffuse = DOCUMENT.createElement("color");
+		color_Diffuse.setAttribute("sid", "diffuse");
+		diffuse.appendChild(color_Diffuse);
+		Text value_Diffuse = DOCUMENT.createTextNode(mtl.diffuse.toDAEFormat());
+		color_Diffuse.appendChild(value_Diffuse);
 		
 		
-		Element Color_Specular = DOCUMENT.createElement("color");
-		Color_Specular.setAttribute("sid", "specular");
-		Specular.appendChild(Color_Specular);
-		Text Value_Specular = DOCUMENT.createTextNode("0 0 0 1");
-		Color_Specular.appendChild(Value_Specular);
+		Element color_Specular = DOCUMENT.createElement("color");
+		color_Specular.setAttribute("sid", "specular");
+		specular.appendChild(color_Specular);
+		Text Value_Specular = DOCUMENT.createTextNode(mtl.specular.toDAEFormat());
+		color_Specular.appendChild(Value_Specular);
 		
 		
-		Element Number_Shininess = DOCUMENT.createElement("color");
-		Number_Shininess.setAttribute("sid", "shininess");
-		Shininess.appendChild(Number_Shininess);
-		Text Value_Shininess = DOCUMENT.createTextNode("0");
-		Number_Shininess.appendChild(Value_Shininess);
+		Element number_Shininess = DOCUMENT.createElement("color");
+		number_Shininess.setAttribute("sid", "shininess");
+		shininess.appendChild(number_Shininess);
+		Text value_Shininess = DOCUMENT.createTextNode("0");
+		number_Shininess.appendChild(value_Shininess);
 		
 		
-		Element FloatValue = DOCUMENT.createElement("float");
-		FloatValue.setAttribute("sid", "index_of_refraction");
-		Refraction.appendChild(FloatValue);
-		Text Value_Refraction = DOCUMENT.createTextNode("1");
-		FloatValue.appendChild(Value_Refraction);
+		Element float_Refraction = DOCUMENT.createElement("float");
+		float_Refraction.setAttribute("sid", "index_of_refraction");
+		refraction.appendChild(float_Refraction);
+		Text value_Refraction = DOCUMENT.createTextNode("1");
+		float_Refraction.appendChild(value_Refraction);
 		
-		//Now that the material is set up, create the reference itself.
-		Element Material = DOCUMENT.createElement("material");
-		Material.setAttribute("id", "Material-material");
-		Material.setAttribute("name", "material");
-		lib_materials.appendChild(Material);
-		Element InstanceEffect = DOCUMENT.createElement("instance_effect");
-		InstanceEffect.setAttribute("url", "#Material-effect");
-		Material.appendChild(InstanceEffect);
+		Element instanceEffect = DOCUMENT.createElement("instance_effect");
+		instanceEffect.setAttribute("url", "#Material-effect");
+		materialId.appendChild(instanceEffect);
+		
+		//And finally append
+		lib_materials.appendChild(materialId);
+		lib_effects.appendChild(mtlEffect);
 	}
 	
-	public void AppendBoneData() {
-		//TODO: Write this. Still debating on what to make it take in.
-	}
-	
-	public void AppendGeometry() {
-		//TODO: Create some class capable of storing all of the geometric data. (The old method was absolutely terrible. Passed in 50 different arrays.)
+	public void createDAE(Model mdl) throws TransformerException {
+		//Finish up the whole thing.
+		ROOT.appendChild(lib_images);
+		ROOT.appendChild(lib_effects);
+		ROOT.appendChild(lib_materials);
+		ROOT.appendChild(lib_geometry);
+		ROOT.appendChild(lib_control);
+		ROOT.appendChild(lib_nodes);
+		ROOT.appendChild(lib_visual_scene);
+		lib_visual_scene.appendChild(base_scene);
+		
+		Element scene = DOCUMENT.createElement("scene");
+		Element visScene = DOCUMENT.createElement("instance_visual_scene");
+		visScene.setAttribute("url", "#scene");
+		scene.appendChild(visScene);
+		ROOT.appendChild(scene);
+		
+		appendNewGeometry(mdl.geometry, mdl.name);
+		appendNewMaterial(mdl.material, mdl.name);
+		appendNewBoneData(mdl.skin, mdl.name);
+		
+		TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		Transformer transformer = transformerFactory.newTransformer();
+		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+		transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+		transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+		
+		DOMSource source = new DOMSource(DOCUMENT);
+		StreamResult result = new StreamResult(new StringWriter());//new StreamResult(System.out);//new StreamResult(new FileOutputStream(_out));
+		
+		transformer.transform(source, result);
+		
+		String xmlString = result.getWriter().toString();
+    	
+    	FileWriter fileWriter;
+    	try {
+    		fileWriter = new FileWriter(OUTPUT_FILE);
+            fileWriter.write(xmlString);
+            fileWriter.flush();
+            fileWriter.close();
+    	} catch (IOException e) {
+    	 
+        }
 	}
 }

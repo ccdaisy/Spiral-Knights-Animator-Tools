@@ -12,11 +12,11 @@ import java.util.zip.InflaterInputStream;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
-import xandragon.converter.file.OBJBuilder;
 import xandragon.core.ui.tree.DataTreePath;
 import xandragon.core.ui.tree.Icon;
 import xandragon.core.ui.tree.Node;
 import xandragon.core.ui.tree.TreeRenderer;
+import xandragon.model.Model;
 import xandragon.util.exception.InvalidDatException;
 import xandragon.util.stream.StreamHelper;
 import xandragon.util.Logger;
@@ -226,7 +226,6 @@ public class BinaryParser {
 	}
 	
 	
-	@SuppressWarnings({ "resource", "unused" })
 	/**
 	 * Start the reader, validating or getting the following information: <ul>
 	 * <li>The DAT file is using the Spiral Knights format</li>
@@ -238,7 +237,7 @@ public class BinaryParser {
 	 * @throws IOException An error occurred while trying to read.
 	 * @throws InvalidDatException The DAT file is malformed.
 	 */
-	public void startProcessing(File input_file, File output_file) throws FileNotFoundException, IOException, InvalidDatException {
+	public Model startProcessing(File input_file, File output_file) throws FileNotFoundException, IOException, InvalidDatException {
 		if ((input_file == null) || (input_file != null && input_file.exists() == false)) {
 			throw new FileNotFoundException("The input file does not exist!");
 		}
@@ -252,6 +251,7 @@ public class BinaryParser {
 		DataInputStream stream = new DataInputStream(fileInput);
 		int magic = stream.readInt();
 		if (magic != MAGIC_NUMBER) { //0xFACEAF0E
+			stream.close();
 			throw new InvalidDatException("[INVALID ID] Expected ID 0xFACEAF0E, got "+ StringTool.intToHex(magic, 0) + " - This is not a valid DAT file.");
 		}
 		
@@ -266,6 +266,7 @@ public class BinaryParser {
 		} else if (version == CLASSIC_VERSION) {
 			//log.AppendLn("File version: CLASSIC_VERSION [0x1000]");
 		} else {
+			stream.close();
 			throw new InvalidDatException("[INVALID VERSION] The version of this DAT file is malformed. The file can not be read.");
 		}
 		
@@ -399,12 +400,20 @@ public class BinaryParser {
 		
 		log.AppendLn("Data collection complete! Generating file...\n");
 		
-		output_file.createNewFile();
-		OBJBuilder obj = new OBJBuilder(output_file);
-		obj.autoWrite(floatArray, vertexArray, normalArray, uvArray, indices);
-		obj.close();
-		
-		log.AppendLn("Conversion complete.");
+		if (output_file.exists()) output_file.delete();
+		String name = getFileName(input_file);
+		Model mdl = new Model(name, floatArray, indices, boneIndices, boneWeights, vertexArray, normalArray, uvArray);
+		return mdl;
+	}
+	
+	protected String getFileName(File f) {
+		String parent_2 = f.getParentFile().getParent();
+		parent_2 = parent_2.substring(parent_2.lastIndexOf(File.separatorChar) + 1);
+		String parent_1 = f.getParent();
+		parent_1 = parent_1.substring(parent_1.lastIndexOf(File.separatorChar) + 1);
+		String name = f.getName();
+		name = name.substring(0, name.lastIndexOf('.'));
+		return parent_2 + "_" + parent_1 + "_" + name;
 	}
 	
 	protected ArrayList<Short> GetIndices(SeekInputStream stream, short amount) throws IOException {
