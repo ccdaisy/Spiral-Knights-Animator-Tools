@@ -23,6 +23,7 @@ boneIndices = 0
 32 + (2 * 4) = 40 (normals)
 40 + (3 * 4) = 52 (vertices)
 ```
+Of course, the above is dynamic to whatever values are or aren't there.
  
 # Issues being fixed right now
 
