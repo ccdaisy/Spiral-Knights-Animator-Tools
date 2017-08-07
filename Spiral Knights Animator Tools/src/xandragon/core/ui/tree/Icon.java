@@ -1,11 +1,14 @@
 package xandragon.core.ui.tree;
 
+import java.net.URL;
+
 import javax.swing.ImageIcon;
 
 public class Icon {
 	
 	protected ImageIcon loadImage(String name) {
-		return new ImageIcon(getClass().getClassLoader().getResource("assets/"+name));
+		URL url = getClass().getClassLoader().getResource("assets/"+name);
+		return new ImageIcon(url);
 	}
 	
 	public ImageIcon object = loadImage("object.png");
@@ -27,5 +30,4 @@ public class Icon {
 	public ImageIcon animation = loadImage("animation.png");
 	public ImageIcon unknown = loadImage("unknown.png");
 	public ImageIcon none = loadImage("empty.png");
-	
 }
