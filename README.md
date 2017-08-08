@@ -2,7 +2,7 @@
 This is a revamp of the old, crappy tool dubbed [Spiral Knights Model Converter](https://github.com/XanTheDragon/Spiral-Knights-Model-Converter).
 
 # When can I try it?
-I have a prototype version up in the releases tab! You can try it yourself.
+There may be a release up in the releases tab. At times I'll remove them.
 
 # When is it truly out and ready for full usage?
 My rough guess is August 13 at a maximum (Two weeks from now, July 30). I'm actively working.
