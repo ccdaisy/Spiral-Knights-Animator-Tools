@@ -7,6 +7,8 @@ There may be a release up in the releases tab. At times I'll remove them.
 # When is it truly out and ready for full usage?
 My rough guess is August 13 at a maximum (Two weeks from now, July 30). I'm actively working.
 
+(**Update: There might be a slight delay given that I may not be able to implement full reading immediately. There are still some intermittent issues with certain models and working out the issues has been a slow process.**)
+
 (Deadline update, posted August 6 @ 3:09 AM - I'm *thinking* that this might be an accurate release date. I've almost got it down for solid model exporting. At the moment I've only got obj exporting as a crude prototype. It has issues with certain implementations but is otherwise exporting perfectly)
 
 # What makes this version better?
