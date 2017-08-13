@@ -5,7 +5,8 @@ This is a revamp of the old, crappy tool dubbed [Spiral Knights Model Converter]
 There may be a release up in the releases tab. At times I'll remove them.
 
 # When is it truly out and ready for full usage?
-My rough guess is August 13 at a maximum (Two weeks from now, July 30). I'm actively working.
+~~My rough guess is August 13 at a maximum (Two weeks from now, July 30). I'm actively working.~~
+Sorry guys, Deadline Machine 🅱roke, and school starts tomorrow for me. (Upd. August 13)
 
 (**Update: There might be a slight delay given that I may not be able to implement full reading immediately. There are still some intermittent issues with certain models and working out the issues has been a slow process.**)
 
