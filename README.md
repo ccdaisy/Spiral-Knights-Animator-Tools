@@ -6,7 +6,8 @@ There may be a release up in the releases tab. At times I'll remove them.
 
 # When is it truly out and ready for full usage?
 ~~My rough guess is August 13 at a maximum (Two weeks from now, July 30). I'm actively working.~~
-Sorry guys, Deadline Machine 🅱roke, and school starts tomorrow for me. (Upd. August 13)
+
+Sorry guys, Deadline Machine 🅱roke, and school starts tomorrow for me. (Upd. August 13) Right now I'm finishing up bone recognition as well as condensing the Vector3 + Quaternion into a 4D matrix (Because DAEs are really picky about that)
 
 (**Update: There might be a slight delay given that I may not be able to implement full reading immediately. There are still some intermittent issues with certain models and working out the issues has been a slow process.**)
 
