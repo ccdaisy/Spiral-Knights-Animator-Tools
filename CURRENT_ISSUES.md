@@ -16,5 +16,10 @@
  
 **002: Errors throwing on any implementations where attempting to find data that doesn't exist, i.e. scripts or animations**
  - Issue severity: Major (Complete program failure)
- - Issue details: Happens mainly on compound models that reference a set of other models. Converter will throw an EOFException when it cannot find the first set of data.
+ - Issue details: Happens mainly on compound models that reference a set of other models. Converter will throw an EOFException when it cannot find the first set of data that is specifically queried in any geometry model.
  - Estimated fix time: 2-3 hours or more due to the requirement of live references to other files.
+
+**004: Knight model implementations are read to be malformed**
+ - Issue severity: Intermediate (Handled conversion failure)
+ - Issue details: Since knights use an implementation not documented in the default libraries (they instead use a custom implementation in the SK JAR file because the model libraries are intended for open source usage), they are formatted slightly differently.
+ - Estimated fix time: Unknown.
