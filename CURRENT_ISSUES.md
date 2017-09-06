@@ -19,7 +19,7 @@
  - Issue details: Happens mainly on compound models that reference a set of other models. Converter will throw an EOFException when it cannot find the first set of data that is specifically queried in any geometry model.
  - Estimated fix time: 2-3 hours or more due to the requirement of live references to other files.
 
-**004: Knight model implementations are read to be malformed**
- - Issue severity: Intermediate (Handled conversion failure)
- - Issue details: Since knights use an implementation not documented in the default libraries (they instead use a custom implementation in the SK JAR file because the model libraries are intended for open source usage), they are formatted slightly differently.
+**004: Knight model implementations are tagged as "malformed" in the converter**
+ - Issue severity: Intermediate (Conversion failure, handled by code)
+ - Issue details: Knights use a custom implementation. The code used to open models is set up to read specific implementations (Articulated, Compound, Static, etc.) but since that code is open source, it's designed for general usage. Spiral Knights does use those libraries, but since Spiral Knights is a standalone game it has its own implementation designed specifically for knights. This is why Spiral Spy must be placed in the SK Directory. The Knight implementation is called "projectXConfig"
  - Estimated fix time: Unknown.
