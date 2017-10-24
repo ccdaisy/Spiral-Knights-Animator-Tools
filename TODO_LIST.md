@@ -2,7 +2,9 @@
 
 #### Key:
 Plain text = Not done
+
 *Italics* = Working on it
+
 ~~Strikethrough~~ = Done
 
 
