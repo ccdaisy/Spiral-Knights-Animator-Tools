@@ -18,7 +18,7 @@ Plain text = Not done
 * Support for GeneratedStaticConfig (Models created within code manually.)
 * *Support for MergedStaticConfig* (Similar to CompoundConfig, but is instead intended to function as one large static piece even though it is comprised of multiple pieces)
 * *Support for StaticConfig* (Static, unmoving models)
-* *Support for StaticSetConfig* (Multiple static models that are normally seperate (unlike MergedStaticConfig))
+* *Support for StaticSetConfig* (Multiple static models that are normally separate (unlike MergedStaticConfig))
 * *Support for ViewerAffecterConfig*
    * *Support for Skyboxes* (Skyboxes reference a model and render them as a 3D skybox)
 * Support for ProjectXConfig (Or, better known as "Knights")
