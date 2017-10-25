@@ -10,7 +10,6 @@ Plain text = Not done
 
 **General:**
 * ~~Add better handlers for unknown data types.~~
-* Work on console exporting. (Maybe an "ignore errors" flag if someone's mass-converting files.)
 
 **Implementations (Model types):**
 * ~~Support for ArticulatedConfig~~ (Animated rigs, characters usually)
