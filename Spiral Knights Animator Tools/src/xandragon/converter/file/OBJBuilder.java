@@ -1,13 +1,13 @@
 package xandragon.converter.file;
-
+/*
 import java.io.*;
 import java.util.ArrayList;
 
 import xandragon.model.Model;
 import xandragon.converter.ArrayConfig;
-
+*/
 public class OBJBuilder {
-	
+/*
 	protected File outputFile;
 	protected FileWriter fw;
 	protected BufferedWriter bw;
@@ -106,4 +106,5 @@ public class OBJBuilder {
 		
 		writeIndices(inds);
 	}
+*/
 }

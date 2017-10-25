@@ -16,7 +16,7 @@ public class TreeRenderer {
 	 * @param rootText The text for the root node to display.
 	 */
 	public TreeRenderer(String rootText) {
-		root = createNode(new Node(rootText));
+		root = createNode(new TreeNode(rootText));
 	}
 	
 	/**
@@ -24,7 +24,7 @@ public class TreeRenderer {
 	 * @param rootText The text for the root node to display.
 	 * @param Node the node object
 	 */
-	public TreeRenderer(Node node) {
+	public TreeRenderer(TreeNode node) {
 		root = createNode(node);
 	}
 	
@@ -37,11 +37,18 @@ public class TreeRenderer {
 	}
 	
 	/**
+	 * @return the root node
+	 */
+	public DefaultMutableTreeNode getRoot() {
+		return root;
+	}
+	
+	/**
 	 * Create a new tree element from a Node
 	 * @param entry The Node that holds the display data
 	 * @return
 	 */
-	public DefaultMutableTreeNode createNode(Node entry) {
+	public DefaultMutableTreeNode createNode(TreeNode entry) {
 		return new DefaultMutableTreeNode(entry);
 	}
 	
@@ -51,7 +58,7 @@ public class TreeRenderer {
 	 * @param entry The Node that holds the display data
 	 * @return
 	 */
-	public DefaultMutableTreeNode addNode(DefaultMutableTreeNode in, Node entry) {
+	public DefaultMutableTreeNode addNode(DefaultMutableTreeNode in, TreeNode entry) {
 		DefaultMutableTreeNode node = new DefaultMutableTreeNode(entry);
 		node.setUserObject(entry);
 		in.add(node);
@@ -63,7 +70,7 @@ public class TreeRenderer {
 	 * @param entry The node to add
 	 * @return
 	 */
-	public DefaultMutableTreeNode addNodeRoot(Node entry) {
+	public DefaultMutableTreeNode addNodeRoot(TreeNode entry) {
 		DefaultMutableTreeNode node = new DefaultMutableTreeNode(entry);
 		node.setUserObject(entry);
 		root.add(node);
@@ -75,7 +82,7 @@ public class TreeRenderer {
 	 * @return a new JTree
 	 */
 	public static JTree createBlankTree() {
-		return new JTree(new DefaultMutableTreeNode(new Node("(no model to view)")));
+		return new JTree(new DefaultMutableTreeNode(new TreeNode("(no model to view)")));
 	}
 	
 	/**
@@ -83,6 +90,6 @@ public class TreeRenderer {
 	 * @return
 	 */
 	public static DataTreePath createBlankTreePath() {
-		return new DataTreePath(new DefaultMutableTreeNode(new Node("(no model to view)")));
+		return new DataTreePath(new DefaultMutableTreeNode(new TreeNode("(no model to view)")));
 	}
 }

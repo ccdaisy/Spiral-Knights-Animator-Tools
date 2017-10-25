@@ -26,7 +26,7 @@ public class CustomTreeCellRenderer extends DefaultTreeCellRenderer implements T
 	
 	protected ImageIcon getIcon(Object ent) {
 		DefaultMutableTreeNode tree_node = (DefaultMutableTreeNode) ent;
-		Node node = ((Node) tree_node.getUserObject());
+		TreeNode node = ((TreeNode) tree_node.getUserObject());
 		return node.displayIcon != null ? node.displayIcon : iconData.none;
 	}
 }

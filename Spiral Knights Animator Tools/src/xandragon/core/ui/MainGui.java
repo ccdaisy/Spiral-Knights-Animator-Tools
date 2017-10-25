@@ -3,20 +3,16 @@ package xandragon.core.ui;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
-import java.io.IOException;
 import java.net.URISyntaxException;
 
 import javax.swing.*;
 import javax.swing.tree.*;
 
 import xandragon.converter.BinaryParser;
-import xandragon.converter.file.*;
 import xandragon.core.ui.tree.CustomTreeCellRenderer;
 import xandragon.core.ui.tree.DataTreePath;
 import xandragon.core.ui.tree.TreeRenderer;
-import xandragon.model.Model;
 import xandragon.util.Logger;
-import xandragon.util.exception.InvalidDatException;
 import xandragon.util.filedata.DataPersistence;
 import xandragon.util.filedata.FileValidator;
 import xandragon.util.filedata.OpenFileFilter;
@@ -36,7 +32,6 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 	//File filters
 	protected OpenFileFilter DAT = new OpenFileFilter("DAT", "Binary Spiral Knights asset file");
 	protected OpenFileFilter DAE = new OpenFileFilter("DAE", "Collada DAE");
-	protected OpenFileFilter OBJ = new OpenFileFilter("OBJ", "Wavefront OBJ");
 	protected OpenFileFilter XML = new OpenFileFilter("XML", "Spiral Spy XML");
 	protected OpenFileFilter DIR = new OpenFileFilter(true);
 	
@@ -54,7 +49,7 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 		setLayout(null);
 		setResizable(false);
 		setTitle("Spiral Knights Animator Tools");
-		setSize(640, 500);
+		setSize(800, 500);
 		
 		dataPersistence = new DataPersistence();
 		chooser = new JFileChooser(dataPersistence.getSavedResourceDirectory());
@@ -73,11 +68,15 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 		
 		saveButton.setEnabled(false);
 		
-		UI_Label.setBounds(5, 70, 360, 420);
+		
+		UI_Label.setBounds(5, 70, 415, 420);
 		add(UI_Label);
 		
-		dataTree.setBounds(365, 65, 280, 420);
-		add(dataTree);
+		JScrollPane scroll = new JScrollPane(dataTree, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		scroll.setBounds(420, 65, 380, 420);
+		//dataTree.setBounds(420, 65, 380, 420);
+		dataTree.setBounds(0, 0, 1000, 1000);
+		add(scroll);
 		
 		openButton.setBounds(25, 35, 180, 30);
 		add(openButton);
@@ -119,6 +118,7 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 		try {
 			dataTree.setModel(dataTreePath);
 			dataTree.setCellRenderer(new CustomTreeCellRenderer());
+			dataTree.treeDidChange();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -131,9 +131,9 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 			chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 			fileMode = SelectType.OPEN;
 			chooser.addChoosableFileFilter(DAT);
-			chooser.removeChoosableFileFilter(OBJ);
 			chooser.removeChoosableFileFilter(DAE);
 			chooser.removeChoosableFileFilter(DIR);
+			chooser.removeChoosableFileFilter(XML);
 			
 			chooser.showDialog(this, "Open model");
 		} else if (evt.getSource() == saveButton) {
@@ -142,9 +142,8 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 			fileMode = SelectType.SAVE;
 			chooser.removeChoosableFileFilter(DAT);
 			chooser.removeChoosableFileFilter(DIR);
-			chooser.addChoosableFileFilter(OBJ);
 			chooser.addChoosableFileFilter(DAE);
-			chooser.addChoosableFileFilter(XML);
+			//chooser.addChoosableFileFilter(XML);
 			
 			chooser.showDialog(this, "Save model");
 		} else if (evt.getSource() == setRsrcButton) {
@@ -152,8 +151,8 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			fileMode = SelectType.SET;
 			chooser.removeChoosableFileFilter(DAT);
-			chooser.removeChoosableFileFilter(OBJ);
 			chooser.removeChoosableFileFilter(DAE);
+			chooser.removeChoosableFileFilter(XML);
 			chooser.addChoosableFileFilter(DIR);
 			
 			chooser.showOpenDialog(this);
@@ -164,24 +163,12 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 					try {
 						log.ClearLog();
 						OpenFileFilter current = (OpenFileFilter) chooser.getFileFilter();
-						if (current == OBJ) {
-							System.out.println(OUTPUT_FILE.getPath());
-							if (!FileValidator.getFileExtension(OUTPUT_FILE).toLowerCase().matches("obj")) {
-								OUTPUT_FILE = new File(OUTPUT_FILE.getPath() + ".obj");
-							}
-							Model mdl = binaryParser.startProcessing(INPUT_FILE, OUTPUT_FILE);
-							
-							OBJBuilder builder = new OBJBuilder(OUTPUT_FILE);
-							builder.createObj(mdl);
-							log.AppendLn("Conversion complete.");
-						} else if (current == DAE) {
+						if (current == DAE) {
 							if (!FileValidator.getFileExtension(OUTPUT_FILE).toLowerCase().matches("dae")) {
 								OUTPUT_FILE = new File(OUTPUT_FILE.getPath() + ".dae");
 							}
-							Model mdl = binaryParser.startProcessing(INPUT_FILE, OUTPUT_FILE);
+							binaryParser.saveDAE(OUTPUT_FILE);
 							
-							DAEBuilder builder = new DAEBuilder(OUTPUT_FILE);
-							builder.createDAE(mdl);
 							log.AppendLn("Conversion complete.");
 						} else if (current == XML) {
 							log.AppendLn("[WARNING] XML Exporting is not ready yet. Please save as another format.");
@@ -194,25 +181,25 @@ public class MainGui extends Frame implements ActionListener, WindowListener {
 					INPUT_FILE = chooser.getSelectedFile();
 					if (INPUT_FILE.exists()) {
 						log.ClearLog();
+						
 						try {
-							updateTree(binaryParser.preProcess(INPUT_FILE));
-							saveButton.setEnabled(true);
-						} catch (IOException e) {
-							log.AppendLn("A critical read exception occurred and conversion was not able to continue.");
+							File t = INPUT_FILE;
+							while (t.getName().matches("rsrc") == false) {
+								t = t.getParentFile();
+							}
+							binaryParser.setResourceDir(t.getPath() + File.separator);
+							binaryParser.process(INPUT_FILE);
+							updateTree(binaryParser.treeRen.getDataTreePath());
+						} catch (Exception e) {
 							e.printStackTrace();
-							resetTree();
-							saveButton.setEnabled(false);
-						} catch (InvalidDatException e) {
-							log.AppendLn(e.getMessage());
-							log.AppendLn("Reading is unable to continue.");
-							resetTree();
-							saveButton.setEnabled(false);
 						}
+						
+						saveButton.setEnabled(true);
 					} else {
 						saveButton.setEnabled(false);
 					}
 				} else if (fileMode == SelectType.SET) {
-					dataPersistence.setRsrcDir(chooser.getSelectedFile());
+					dataPersistence.setSavedResourceDirectory(chooser.getSelectedFile());
 				}
 			} else if (evt.getActionCommand() == JFileChooser.CANCEL_SELECTION) {
 				//Do I do anything here?

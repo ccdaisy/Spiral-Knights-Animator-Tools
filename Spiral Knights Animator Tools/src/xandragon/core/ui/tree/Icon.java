@@ -11,11 +11,12 @@ public class Icon {
 		return new ImageIcon(url);
 	}
 	
+	public ImageIcon info = loadImage("info.png");
 	public ImageIcon object = loadImage("object.png");
+	public ImageIcon sky = loadImage("sky.png");
 	public ImageIcon model = loadImage("model.png");
 	public ImageIcon value = loadImage("value.png");
 	public ImageIcon tag = loadImage("tag.png");
-	public ImageIcon generatedstatic = loadImage("generatedstatic.png");
 	public ImageIcon plug = loadImage("plug.png");
 	public ImageIcon folder_gear = loadImage("folder_gear.png");
 	public ImageIcon folder_wrench = loadImage("folder_wrench.png");
@@ -25,6 +26,7 @@ public class Icon {
 	public ImageIcon script = loadImage("script.png");
 	public ImageIcon attachment = loadImage("hat.png");
 	public ImageIcon derived = loadImage("derived.png");
+	public ImageIcon script_part = loadImage("script_part.png");
 	public ImageIcon part = loadImage("part.png");
 	public ImageIcon partgroup = loadImage("partgroup.png");
 	public ImageIcon animation = loadImage("animation.png");

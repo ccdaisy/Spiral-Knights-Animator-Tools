@@ -20,13 +20,17 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Text;
 
-import xandragon.model.Geometry;
-import xandragon.model.Material;
-import xandragon.model.Model;
-import xandragon.model.Skin;
+import com.threerings.opengl.model.Model;
+import com.threerings.opengl.model.config.ArticulatedConfig.Attachment;
+import com.threerings.opengl.model.config.ArticulatedConfig.Node;
+import com.threerings.opengl.model.config.ModelConfig.VisibleMesh;
+
+import xandragon.converter.model.Geometry;
 
 @SuppressWarnings("unused")
+
 public class DAEBuilder {
+
 	protected File OUTPUT_FILE;
 	protected Document DOCUMENT;
 	protected Element ROOT;
@@ -126,7 +130,7 @@ public class DAEBuilder {
 			list = geo.createUVList();
 		}
 		
-		int sizeVal = data.size() * (data == geo.uvs ? 2 : 3);
+		int sizeVal = data.size();
 		
 		//Source
 		Element src = DOCUMENT.createElement("source");
@@ -183,7 +187,7 @@ public class DAEBuilder {
 		return src;
 	}
 	
-	protected void appendNewGeometry(Geometry geo, String name) {
+	public void appendNewGeometry(Geometry geo, String name, int ID) {
 		//PRE-WRITE: GET VALUES FROM GEOMETRY.
 		int vertexSize = geo.vertices.size();
 		int normalSize = geo.normals.size();
@@ -193,50 +197,50 @@ public class DAEBuilder {
 		//PART 1: HEADING//
 		///////////////////	
 		Element geometryId = DOCUMENT.createElement("geometry");
-		geometryId.setAttribute("id", name+"-mesh");
-		geometryId.setAttribute("name", name);
+		geometryId.setAttribute("id", name + ID +"-mesh");
+		geometryId.setAttribute("name", name + ID);
 		Element mesh = DOCUMENT.createElement("mesh");
 		geometryId.appendChild(mesh);
 		
 		////////////////////
 		//PART 2: RAW DATA//
 		////////////////////	
-		mesh.appendChild(appendGeometryData(geo, geo.vertices, "positions", name));
-		mesh.appendChild(appendGeometryData(geo, geo.normals, "normals", name));
-		mesh.appendChild(appendGeometryData(geo, geo.uvs, "map-0", name));
+		mesh.appendChild(appendGeometryData(geo, geo.vertices, "positions", name + ID));
+		mesh.appendChild(appendGeometryData(geo, geo.normals, "normals", name + ID));
+		mesh.appendChild(appendGeometryData(geo, geo.uvs, "map-0", name + ID));
 		
 		//////////////////////
 		//PART 3: REFERENCES//
 		//////////////////////
 		Element vertices = DOCUMENT.createElement("vertices");
- 		vertices.setAttribute("id", name+"-mesh-vertices");
+ 		vertices.setAttribute("id", name + ID +"-mesh-vertices");
  		mesh.appendChild(vertices);
  		
  		Element posInput = DOCUMENT.createElement("input");
  		posInput.setAttribute("semantic", "POSITION");
- 		posInput.setAttribute("source", "#"+name+"-mesh-positions");
+ 		posInput.setAttribute("source", "#"+ name + ID +"-mesh-positions");
  		vertices.appendChild(posInput);
  		
  		Element triangleList = DOCUMENT.createElement("triangles");
  		triangleList.setAttribute("count", String.valueOf(geo.indices.size()));
- 		triangleList.setAttribute("material", "Material-material");
+ 		triangleList.setAttribute("material", name + ID + "-material");
  		mesh.appendChild(triangleList);
  		
  		Element vtxInput = DOCUMENT.createElement("input");
  		vtxInput.setAttribute("semantic", "VERTEX");
- 		vtxInput.setAttribute("source", "#"+name+"-mesh-vertices");
+ 		vtxInput.setAttribute("source", "#"+ name + ID +"-mesh-vertices");
  		vtxInput.setAttribute("offset", "0");
  		triangleList.appendChild(vtxInput);
  		
  		Element nrmInput = DOCUMENT.createElement("input");
  		nrmInput.setAttribute("semantic", "NORMAL");
- 		nrmInput.setAttribute("source", "#"+name+"-mesh-normals");
+ 		nrmInput.setAttribute("source", "#"+ name + ID +"-mesh-normals");
  		nrmInput.setAttribute("offset", "0");
  		triangleList.appendChild(nrmInput);
  		
  		Element uvInput = DOCUMENT.createElement("input");
  		uvInput.setAttribute("semantic", "TEXCOORD");
- 		uvInput.setAttribute("source", "#"+name+"-mesh-map-0");
+ 		uvInput.setAttribute("source", "#"+ name + ID +"-mesh-map-0");
  		uvInput.setAttribute("offset", "0");
  		uvInput.setAttribute("set", "0");
  		triangleList.appendChild(uvInput);
@@ -253,11 +257,11 @@ public class DAEBuilder {
  		lib_geometry.appendChild(geometryId);
 	}
 	
-	protected void appendNewBoneData(Skin skin, String name) {
+	public void appendNewBoneData(String name, int ID) {
 		//Append the base scene data.
 		Element scNode = DOCUMENT.createElement("node");
-		scNode.setAttribute("id", name);
-		scNode.setAttribute("name", name);
+		scNode.setAttribute("id", name + ID);
+		scNode.setAttribute("name", name + ID);
 		scNode.setAttribute("type", "NODE");
 		base_scene.appendChild(scNode);
 		
@@ -275,8 +279,8 @@ public class DAEBuilder {
 			scNode.appendChild(trsMatrix);
 			
 			Element geoInstance = DOCUMENT.createElement("instance_geometry");
-			geoInstance.setAttribute("url", "#"+name+"-mesh");
-			geoInstance.setAttribute("name", name);
+			geoInstance.setAttribute("url", "#"+ name + ID +"-mesh");
+			geoInstance.setAttribute("name", name + ID);
 			scNode.appendChild(geoInstance);
 			
 			Element mtlBinding = DOCUMENT.createElement("bind_material");
@@ -285,8 +289,8 @@ public class DAEBuilder {
 			mtlBinding.appendChild(technique);
 			
 			Element mtlInstance = DOCUMENT.createElement("instance_material");
-			mtlInstance.setAttribute("symbol", "Material-material");
-			mtlInstance.setAttribute("target", "#Material-material");
+			mtlInstance.setAttribute("symbol", name + ID + "-material");
+			mtlInstance.setAttribute("target", "#" + name + ID + "-material");
 			technique.appendChild(mtlInstance);
 			
 			//And then be done with it.
@@ -298,16 +302,16 @@ public class DAEBuilder {
 		
 	}
 	
-	protected void appendNewMaterial(Material mtl, String name) {
+	public void appendNewMaterial(String name, int ID) {
 		////////////////////////////
 		//PART 1: MATERIAL HEADING//
 		////////////////////////////
 		Element materialId = DOCUMENT.createElement("material");
-		materialId.setAttribute("id", name+"-material");
-		materialId.setAttribute("name", name);
+		materialId.setAttribute("id", name + ID +"-material");
+		materialId.setAttribute("name", name + ID);
 		
 		Element mtlEffect = DOCUMENT.createElement("effect");
-		mtlEffect.setAttribute("id", "Material-effect");
+		mtlEffect.setAttribute("id", name + ID + "-effect");
 		
 		Element mtlProfile = DOCUMENT.createElement("profile_COMMON");
 		Element mtlTechnique = DOCUMENT.createElement("technique");
@@ -339,28 +343,28 @@ public class DAEBuilder {
 		Element color_Emission = DOCUMENT.createElement("color");
 		color_Emission.setAttribute("sid", "emission");
 		emission.appendChild(color_Emission);
-		Text value_Emission = DOCUMENT.createTextNode(mtl.emission.toDAEFormat());
+		Text value_Emission = DOCUMENT.createTextNode("0 0 0 1");
 		color_Emission.appendChild(value_Emission);
 		
 		
 		Element color_Ambient = DOCUMENT.createElement("color");
 		color_Ambient.setAttribute("sid", "ambient");
 		ambient.appendChild(color_Ambient);
-		Text value_Ambient = DOCUMENT.createTextNode(mtl.ambient.toDAEFormat());
+		Text value_Ambient = DOCUMENT.createTextNode("0 0 0 1");
 		color_Ambient.appendChild(value_Ambient);
 		
 		
 		Element color_Diffuse = DOCUMENT.createElement("color");
 		color_Diffuse.setAttribute("sid", "diffuse");
 		diffuse.appendChild(color_Diffuse);
-		Text value_Diffuse = DOCUMENT.createTextNode(mtl.diffuse.toDAEFormat());
+		Text value_Diffuse = DOCUMENT.createTextNode("1 1 1 1");
 		color_Diffuse.appendChild(value_Diffuse);
 		
 		
 		Element color_Specular = DOCUMENT.createElement("color");
 		color_Specular.setAttribute("sid", "specular");
 		specular.appendChild(color_Specular);
-		Text Value_Specular = DOCUMENT.createTextNode(mtl.specular.toDAEFormat());
+		Text Value_Specular = DOCUMENT.createTextNode("0 0 0 1");
 		color_Specular.appendChild(Value_Specular);
 		
 		
@@ -378,7 +382,7 @@ public class DAEBuilder {
 		float_Refraction.appendChild(value_Refraction);
 		
 		Element instanceEffect = DOCUMENT.createElement("instance_effect");
-		instanceEffect.setAttribute("url", "#Material-effect");
+		instanceEffect.setAttribute("url", "#" + name + ID + "-effect");
 		materialId.appendChild(instanceEffect);
 		
 		//And finally append
@@ -386,7 +390,7 @@ public class DAEBuilder {
 		lib_effects.appendChild(mtlEffect);
 	}
 	
-	public void createDAE(Model mdl) throws TransformerException {
+	public void createDAE() throws TransformerException {
 		//Finish up the whole thing.
 		ROOT.appendChild(lib_images);
 		ROOT.appendChild(lib_effects);
@@ -402,10 +406,6 @@ public class DAEBuilder {
 		visScene.setAttribute("url", "#scene");
 		scene.appendChild(visScene);
 		ROOT.appendChild(scene);
-		
-		appendNewGeometry(mdl.geometry, mdl.name);
-		appendNewMaterial(mdl.material, mdl.name);
-		appendNewBoneData(mdl.skin, mdl.name);
 		
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();

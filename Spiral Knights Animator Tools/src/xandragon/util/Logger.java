@@ -27,10 +27,14 @@ public class Logger {
 		}
 		for (int idx = 0; idx < objects.length; idx++) {
 			Object obj = objects[idx];
-			if (obj instanceof String) {
-				Append((String) obj + "\n");
+			if (obj != null) {
+				if (obj instanceof String) {
+					Append((String) obj + "\n");
+				} else {
+					Append(obj.toString() + "\n");
+				}
 			} else {
-				Append(obj.toString() + "\n");
+				Append("null\n");
 			}
 		}
 	}

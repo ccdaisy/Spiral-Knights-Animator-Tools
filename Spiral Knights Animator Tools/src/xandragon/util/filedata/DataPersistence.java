@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 /**
  * Main class responsible for data persistence (i.e. setting resources directory)
@@ -14,22 +13,31 @@ import java.net.URISyntaxException;
  */
 public class DataPersistence {
 	public boolean isDevBuild = false;
-	protected File thisJarLocation;
-	protected File thisJar;
+	protected File thisJarLocation = null;
 	
-	public DataPersistence() throws URISyntaxException {
-		thisJar = new File(xandragon.core.Main.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
-		if (thisJar.isDirectory()) {
-			isDevBuild = true; //This will point to the bin folder if it's a development build.
+	public static File getJarDir() {
+		String path = xandragon.core.Main.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+		path = path.replaceAll("%20", " ");
+		
+		return new File(path);
+	}
+	
+	public DataPersistence() {
+		String OS = System.getProperty("os.name").toLowerCase();
+		String path = "/";
+		if (OS.indexOf("win") != -1) {
+			path = System.getenv("LOCALAPPDATA") + File.separator;
+		} else if (OS.indexOf("mac") != -1) {
+			path = System.getProperty("user.home") + File.separator + "Library" + File.separator + "Application Support" + File.separator + "SKAnimatorTools" + File.separator;
 		}
-		thisJarLocation = thisJar.getParentFile();
+		thisJarLocation = new File(path);
 	}
 	
 	public File getSavedResourceDirectory() {
 		if (thisJarLocation == null) {
 			return null;
 		}
-		File dataFile = new File(thisJarLocation.getPath() + File.separator + "converterResourceDir");
+		File dataFile = new File(thisJarLocation.getPath() + File.separator + "ConverterResourceDir");
 		if (dataFile.exists()) {
 			return getRsrcFromFile(dataFile);
 		} else {
@@ -42,15 +50,15 @@ public class DataPersistence {
 		return thisJarLocation;
 	}
 	
-	public void setRsrcDir(File f) {
+	public void setSavedResourceDirectory(File f) {
 		try {
 			if (f.exists() && f.isDirectory()) {
-				BufferedWriter bw = new BufferedWriter(new FileWriter(new File(thisJarLocation.getPath() + File.separator + "converterResourceDir")));
+				BufferedWriter bw = new BufferedWriter(new FileWriter(new File(thisJarLocation.getPath() + File.separator + "ConverterResourceDir")));
 				bw.write(f.getPath());
 				bw.close();
 			}
 		} catch (Exception e) {
-			
+			e.printStackTrace();
 		}
 	}
 	
