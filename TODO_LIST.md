@@ -22,12 +22,10 @@ Plain text = Not done
 * ~~Support for StaticConfig~~ (Static, unmoving models)
 * ~~Support for StaticSetConfig~~ (Multiple static models that are normally separate (unlike MergedStaticConfig))
 * ~~Support for other configs~~
-* *Support for ProjectXConfig* (Or, better known as "Knights")
-
-**Other:**
-* Support for loading Animations + exporting animation data
+* **~~Support for ProjectXModelConfig (Or, better known as "Knights")~~** (NOTE: This update will not be appended. Through further research I found that ProjectXModelConfig knight models are intended to be controlled by players. This config allows for the things like seperate leg animations based on where you're facing vs where you're moving. There is another knight model, luckily.)
 
 **Export:**
 * Finish upgraded DAE exporter.
    * ~~Finish base model exporting~~
    * *Finish bone data output*
+   * Animation output
